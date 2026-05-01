@@ -103,6 +103,93 @@ download.
 
 ---
 
+## Offline / air-gapped install
+
+If you don't want SmartBridge Setup to touch the internet — for
+privacy, restricted networks, IT-managed deployments, or just
+because you'd rather keep an archived copy locally — you can install
+entirely from a single pre-downloaded bundle.
+
+### 1. Get the offline bundle
+
+Each SmartBridge release on the asset-feed repo has a single self-
+contained zip you can grab manually:
+
+```
+smartbridge-offline-bundle-<version>.zip
+```
+
+Find it under
+[smartbridge-releases / Releases](https://github.com/claudioreyesdeveloper/smartbridge-releases/releases)
+on the release page that matches the SmartBridge version you want
+to install. The zip contains the manifest plus every component
+(macOS pkg, Windows installer, Cubase script and template, SynthV
+script, help files, seed configuration, etc.) along with a
+`README.txt` and SHA256 checksums.
+
+### 2. Unzip it anywhere
+
+Pick a folder you'll keep — a USB stick, a network share, a folder
+on your Desktop, anything. The bundle is a single directory.
+
+### 3. Tell SmartBridge Setup to use it
+
+1. Launch SmartBridge Setup.
+2. Click the **Diagnostics** tab.
+3. Find the section **Offline / local repository**.
+4. Paste the absolute path to the unzipped bundle folder and click
+   **Use this folder**.
+5. An **Offline** badge appears next to the version in the header.
+6. Switch back to the **Dashboard**. From this point on, every
+   install action reads files from your local folder instead of the
+   internet. SHA256 verification still runs against the manifest.
+
+To go back to online mode, click **Disable offline mode** in the
+same Diagnostics section.
+
+### Scripted / IT deployment
+
+You can also lock the offline path with an environment variable so
+end users can't change it from the UI:
+
+```bash
+# macOS / Linux
+export SMARTBRIDGE_LOCAL_REPO=/path/to/smartbridge-offline-bundle-<version>
+```
+
+```powershell
+# Windows (per-user, persistent)
+[Environment]::SetEnvironmentVariable(
+  "SMARTBRIDGE_LOCAL_REPO",
+  "C:\Path\to\smartbridge-offline-bundle-<version>",
+  "User"
+)
+```
+
+When the env var is set, the Diagnostics input is locked and the
+status reads "set via SMARTBRIDGE_LOCAL_REPO env var".
+
+### What's in the bundle
+
+| File | Purpose |
+|---|---|
+| `smartbridge-release-manifest.json` | Single source of truth: components, files, SHA256s |
+| `SmartBridge_<v>.pkg` | macOS plugin installer |
+| `SmartBridge_<v>_Setup.exe` | Windows plugin installer |
+| `SmartBridge.cpr` | Cubase project template |
+| `SmartBridge_GenosSlotRename.js` | Cubase MIDI Remote driver |
+| `synthv_smartbridge_sidepanel.lua` | Synthesizer V side-panel script |
+| `loopMIDISetup_<v>.zip` | Windows-only MIDI loopback runtime (Tobias Erichsen) |
+| `config-default.json` | Seed configuration (no secrets) |
+| `Installation_guide.zip` | Getting-started PDF and one-pager |
+| `smartbridge_multilingual_manual.zip` | Full multilingual manual |
+| `build_features.{macos,windows}.json` | Per-platform feature flags |
+| `README.txt` | Plain-text instructions |
+
+Bundle sizes typically run 350–400 MB depending on the release.
+
+---
+
 ## Source code
 
 The SmartBridge source code is in the private
