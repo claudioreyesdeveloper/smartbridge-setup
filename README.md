@@ -134,7 +134,7 @@ The serial is checked on your own computer. There is no online login.
 
 ## If You Get Stuck
 
-Reply to the email where you received SmartBridge.
+Email Claudio at **claudio.private@gmail.com**.
 
 Please include:
 
