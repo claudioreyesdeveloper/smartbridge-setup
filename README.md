@@ -10,15 +10,57 @@ Tyros / Genos workstation.
 
 ## Download
 
-Pick the file for your platform from the [Releases](../../releases) page.
+Each release ships **three flavors** of SmartBridge Setup. Pick the one
+that matches what you were invited to:
 
-| Platform | File |
-|---|---|
-| **macOS** (Apple Silicon, macOS 11+) | `SmartBridge_Setup_<version>_arm64.dmg` |
-| **Windows** (x64, Windows 10 1809+) | `SmartBridge_Setup_<version>_x64-setup.exe` |
-| **Windows** (x64, MSI for IT deployment) | `SmartBridge_Setup_<version>_x64.msi` |
+| Flavor | What it is | Pick this if… |
+|---|---|---|
+| **Release** | Full SmartBridge, no time limit, no activation prompt. | …you bought / received a normal license. |
+| **Demo** | Full SmartBridge that stops working **30 days after first launch**. | …you want to evaluate before deciding. |
+| **Beta 0.1** | Invitation-only build. Asks for the **email + serial** we sent you. | …you got a beta invitation email. |
+
+All three install side-by-side (different bundle identifiers and product
+names) — you can have Demo and Release installed at the same time
+without conflict if you want to.
+
+Pick the file for your platform from the [Releases](../../releases)
+page:
+
+| Platform | Release | Demo | Beta 0.1 |
+|---|---|---|---|
+| **macOS** (Apple Silicon, macOS 11+) | `SmartBridge_Setup_<v>_arm64.dmg` | `SmartBridge_Setup_Demo_<v>_arm64.dmg` | `SmartBridge_Setup_Beta-0.1_<v>_arm64.dmg` |
+| **Windows** (x64, Windows 10 1809+)  | `SmartBridge_Setup_<v>_x64-setup.exe` | `SmartBridge_Setup_Demo_<v>_x64-setup.exe` | `SmartBridge_Setup_Beta-0.1_<v>_x64-setup.exe` |
+| **Windows** (MSI, IT deployment)     | `SmartBridge_Setup_<v>_x64.msi` | `SmartBridge_Setup_Demo_<v>_x64.msi` | `SmartBridge_Setup_Beta-0.1_<v>_x64.msi` |
 
 Each download has a `.sha256` sidecar so you can verify integrity.
+
+### What the three flavors actually do
+
+- **Release** – the Setup app installs SmartBridge and writes a tiny
+  `license.json` saying "no checks, ever". You will never see a
+  countdown banner or an activation dialog.
+
+- **Demo** – the Setup app does not write any license file. The first
+  time SmartBridge launches, it stamps "today" into its own
+  `license.json` and starts a 30-day countdown. After 30 days, the
+  app shows an "expired" message and quits. There is no online
+  check; the timer lives in the local file. Reinstalling the app
+  does not reset the timer (the file outlives the app), but
+  manually deleting `~/Library/SmartBridge/license.json` (or the
+  equivalent on Windows) does. We're aware. It's a soft gate, not
+  copy-protection.
+
+- **Beta 0.1** – the Setup app shows an **Activate** dialog before
+  it will install anything. Enter your email address and the 16-
+  character serial we sent in your invitation
+  (`XXXX-XXXX-XXXX-XXXX`, case + dashes don't matter). Setup
+  validates the serial locally (no internet round-trip) and writes
+  it to `license.json`. The plugin re-validates the same pair on
+  every launch.
+
+  If you fat-finger the serial, the dialog stays open and lets you
+  retry — Setup does not exit until you either succeed or click
+  **Quit**.
 
 ---
 
@@ -203,7 +245,17 @@ questions.
 
 Setup releases are tagged `setup-v<MAJOR.MINOR.PATCH>` (e.g.
 `setup-v0.1.0`, `setup-v2.0.0`). Pre-1.0 releases are flagged as
-**Pre-release** until general availability.
+**Pre-release** until general availability. Each tag publishes the
+**Release**, **Demo**, and **Beta 0.1** flavors at once.
+
+---
+
+## Lost or wrong Beta serial?
+
+Reply to your beta-invitation email with the address you typed into
+Setup. Serials are derived deterministically from the (lowercased,
+trimmed) email; the same email always produces the same serial, so
+we can re-send it without rotating anything else.
 
 ---
 
