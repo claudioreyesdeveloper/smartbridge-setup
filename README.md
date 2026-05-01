@@ -4,6 +4,8 @@ SmartBridge Setup helps you install SmartBridge on your computer.
 
 SmartBridge connects your Yamaha keyboard with music tools like Cubase and Synthesizer V.
 
+SmartBridge currently supports Yamaha **Tyros 1, 2, 3, 4, and 5** and **Genos 1 and 2**.
+
 **Download here:** [Latest SmartBridge Setup release](../../releases/latest)
 
 ---
@@ -47,8 +49,6 @@ For Windows:
 If you are on a recent Apple Silicon Mac, download the `.dmg` file.
 
 If you are on Windows, download the `.exe` file.
-
-You can ignore the `.sha256` files. They are only there for advanced users who want to check the download.
 
 You can also ignore the `Source code` files GitHub adds at the bottom of the release page.
 
