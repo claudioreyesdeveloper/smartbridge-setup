@@ -278,6 +278,14 @@
     screen = "ready";
   }
 
+  async function removeAiLyrics() {
+    profile = { ...profile, use_ai_lyrics: false };
+    const online = await checkInternetBefore("profile");
+    if (!online) return;
+    plan = await getInstallPlan(profile);
+    screen = "ready";
+  }
+
   async function beginInstall() {
     const online = await checkInternetBefore("ready");
     if (!online) return;
@@ -440,6 +448,9 @@
     {#if profile.use_ai_lyrics}
       <div class="alert">
         {text(locale, "profile_long_warning")}
+        <button class="inline-action" onclick={() => profile.use_ai_lyrics = false}>
+          {text(locale, "profile_remove_ai")}
+        </button>
       </div>
     {/if}
 
@@ -460,6 +471,9 @@
     {#if profile.use_ai_lyrics}
       <div class="alert">
         {text(locale, "ready_long_warning")}
+        <button class="inline-action" onclick={removeAiLyrics}>
+          {text(locale, "ready_remove_ai")}
+        </button>
       </div>
     {/if}
     <details>
@@ -644,5 +658,18 @@
     margin-top: 4px;
     font-size: 0.9rem;
     color: var(--text-muted);
+  }
+
+  .inline-action {
+    display: block;
+    margin-top: 12px;
+    border: 0;
+    background: transparent;
+    color: var(--primary);
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+    text-decoration: underline;
+    cursor: pointer;
   }
 </style>

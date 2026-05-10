@@ -7,7 +7,7 @@
 //!   macOS:   ~/Documents/Steinberg/Cubase/MIDI Remote/Driver Scripts/Local/SmartBridge/GenosSlotRename/SmartBridge_GenosSlotRename.js
 //!   Windows: %USERPROFILE%\Documents\Steinberg\Cubase\MIDI Remote\Driver Scripts\Local\SmartBridge\GenosSlotRename\SmartBridge_GenosSlotRename.js
 //!
-//! Project template (per Cubase major version; we look at 14 and 15 today;
+//! Project template (per Cubase major version; we look at 12-15 today;
 //! when 16 ships, add it here):
 //!   macOS:   ~/Library/Preferences/Cubase {VER}/Project Templates/SmartBridge.cpr
 //!   Windows: %APPDATA%\Steinberg\Cubase {VER}\Project Templates\SmartBridge.cpr
@@ -21,7 +21,7 @@
 use super::DetectionResult;
 use std::path::PathBuf;
 
-const SUPPORTED_CUBASE_VERSIONS: &[u32] = &[14, 15];
+const SUPPORTED_CUBASE_VERSIONS: &[u32] = &[12, 13, 14, 15];
 
 pub async fn detect() -> DetectionResult {
     let docs = match dirs::document_dir() {
@@ -79,7 +79,7 @@ pub async fn detect() -> DetectionResult {
 
     if !any_cubase_signal && detected_template_versions.is_empty() {
         return DetectionResult::not_installed()
-            .with_detail("Cubase 14 or 15 not detected on this machine.");
+            .with_detail("Cubase 12, 13, 14, or 15 not detected on this machine.");
     }
 
     if missing.is_empty() && !present.is_empty() {

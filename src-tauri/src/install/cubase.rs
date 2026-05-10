@@ -1,6 +1,6 @@
 //! cubase-connection install: places the MIDI Remote driver script in
 //! the version-agnostic Driver Scripts folder, and the project template
-//! in every detected Cubase 14/15 prefs folder.
+//! in every detected Cubase 12-15 prefs folder.
 //!
 //! If no Cubase prefs folder is detected, we still install the MIDI
 //! Remote script (it's harmless until Cubase is installed) and queue the
@@ -17,7 +17,7 @@ use tauri::AppHandle;
 const COMPONENT: &str = "cubase-connection";
 const SCRIPT_ASSET_ID: &str = "cubase-connection.midi-remote-script";
 const TEMPLATE_ASSET_ID: &str = "cubase-connection.project-template";
-const SUPPORTED_CUBASE_VERSIONS: &[u32] = &[14, 15];
+const SUPPORTED_CUBASE_VERSIONS: &[u32] = &[12, 13, 14, 15];
 
 pub async fn install(app: &AppHandle, manifest: &Manifest) -> InstallOutcome {
     let component = match manifest.component(COMPONENT) {
@@ -85,7 +85,7 @@ pub async fn install(app: &AppHandle, manifest: &Manifest) -> InstallOutcome {
                                 let target = manual_dir.join("SmartBridge.cpr");
                                 match std::fs::copy(&outcome.local_path, &target) {
                                     Ok(_) => messages.push(format!(
-                                        "no Cubase 14/15 prefs detected — placed template at {} for manual install",
+                                        "no Cubase 12-15 prefs detected — placed template at {} for manual install",
                                         target.display()
                                     )),
                                     Err(e) => errors.push(format!("copy manual template: {e}")),
@@ -126,7 +126,7 @@ fn midi_remote_script_path() -> PathBuf {
 
 /// Delete the MIDI Remote driver script and the per-version project
 /// templates that the install action placed. Templates only get deleted
-/// in the Cubase 14 / 15 prefs locations Setup wrote them into; templates
+/// in the Cubase 12-15 prefs locations Setup wrote them into; templates
 /// in unrelated Cubase prefs that the customer dragged there manually
 /// are not touched. The Documents\SmartBridge\Cubase Manual Install
 /// fallback bundle is also removed.

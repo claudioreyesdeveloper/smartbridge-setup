@@ -30,6 +30,7 @@ export interface Messages {
   profile_q_ai: string;
   profile_q_ai_sub: string;
   profile_long_warning: string;
+  profile_remove_ai: string;
   profile_yes: string;
   profile_no: string;
   profile_cta: string;
@@ -37,6 +38,7 @@ export interface Messages {
   ready_body_one: string;
   ready_body_many: string;
   ready_long_warning: string;
+  ready_remove_ai: string;
   ready_what: string;
   ready_cta: string;
   internet_lead: string;
@@ -130,6 +132,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     profile_q_ai: "Do you want help writing lyrics?",
     profile_q_ai_sub: "Adds a smart helper that suggests lyric ideas. Needs a slow one-time download of about 10 GB.",
     profile_long_warning: "You chose the large optional download. This can take a long time, especially on slower internet.",
+    profile_remove_ai: "No, install without AI lyrics",
     profile_yes: "Yes",
     profile_no: "No, thank you",
     profile_cta: "Continue",
@@ -137,6 +140,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     ready_body_one: "We will install one thing on your computer.",
     ready_body_many: "We will install {count} things on your computer.",
     ready_long_warning: "This setup includes AI lyrics. The first download is about 10 GB, so please leave the computer on and connected to the internet.",
+    ready_remove_ai: "Go back and remove AI lyrics",
     ready_what: "Show me what",
     ready_cta: "Install now",
     internet_lead: "Please connect to the internet.",
@@ -228,6 +232,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     profile_q_ai: "M\u00f6chten Sie Hilfe beim Schreiben von Liedtexten?",
     profile_q_ai_sub: "F\u00fcgt einen Helfer hinzu, der Textideen vorschl\u00e4gt. Der erste Download ist langsam und etwa 10 GB gro\u00df.",
     profile_long_warning: "Sie haben den gro\u00dfen optionalen Download gew\u00e4hlt. Das kann lange dauern, besonders bei langsamem Internet.",
+    profile_remove_ai: "Nein, ohne KI-Liedtexte installieren",
     profile_yes: "Ja",
     profile_no: "Nein, danke",
     profile_cta: "Weiter",
@@ -235,6 +240,7 @@ export const MESSAGES: Record<Locale, Messages> = {
     ready_body_one: "Wir installieren eine Sache auf Ihrem Computer.",
     ready_body_many: "Wir installieren {count} Dinge auf Ihrem Computer.",
     ready_long_warning: "Diese Einrichtung enth\u00e4lt KI-Liedtexte. Der erste Download ist etwa 10 GB gro\u00df. Bitte lassen Sie den Computer eingeschaltet und mit dem Internet verbunden.",
+    ready_remove_ai: "Zur\u00fcck und KI-Liedtexte entfernen",
     ready_what: "Was genau?",
     ready_cta: "Jetzt installieren",
     internet_lead: "Bitte mit dem Internet verbinden.",
