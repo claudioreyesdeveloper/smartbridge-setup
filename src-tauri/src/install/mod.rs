@@ -26,6 +26,7 @@ pub mod loopmidi;
 pub mod main_app;
 pub mod resources;
 pub mod synthv;
+pub mod yamaha_steinberg;
 pub mod zip_util;
 
 use crate::detection::DetectionResult;
@@ -139,6 +140,7 @@ pub async fn install(
         "smartbridge-resources" => resources::install(app, manifest).await,
         "help-files" => help_files::install(app, manifest).await,
         "windows-loopmidi" => loopmidi::install(app).await,
+        "yamaha-steinberg-driver" => yamaha_steinberg::install().await,
         other => InstallOutcome::err(
             other,
             vec![format!("unknown component: {other}")],
@@ -166,6 +168,7 @@ pub async fn remove(component_id: &str) -> InstallOutcome {
         "smartbridge-resources" => resources::remove().await,
         "help-files" => help_files::remove().await,
         "windows-loopmidi" => loopmidi::remove().await,
+        "yamaha-steinberg-driver" => yamaha_steinberg::remove().await,
         other => InstallOutcome::err(
             other,
             vec![format!("unknown component: {other}")],

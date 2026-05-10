@@ -140,6 +140,16 @@ const COMPONENT_META: &[ComponentMeta] = &[
         optional: true,
         action_label: "Install",
     },
+    ComponentMeta {
+        id: "yamaha-steinberg-driver",
+        display_name: "Yamaha Steinberg USB Driver (Windows)",
+        plain_language:
+            "Lets Windows talk to Yamaha keyboards over USB MIDI. Installed automatically \
+             with winget if it is missing.",
+        required: false,
+        optional: true,
+        action_label: "Install",
+    },
 ];
 
 fn meta_for(id: &str) -> Option<&'static ComponentMeta> {

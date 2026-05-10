@@ -17,6 +17,7 @@ pub mod loopmidi;
 pub mod main_app;
 pub mod resources;
 pub mod synthv;
+pub mod yamaha_steinberg;
 
 use crate::commands::ComponentState;
 use serde::Serialize;
@@ -89,7 +90,7 @@ impl DetectionResult {
 /// Run every detector concurrently. Returns a vec in the order the
 /// dashboard expects (matching `commands::list_components`).
 pub async fn detect_all() -> Vec<(&'static str, DetectionResult)> {
-    let (main, cubase, ai, ai_default, synthv, resources, help, loopmidi) = tokio::join!(
+    let (main, cubase, ai, ai_default, synthv, resources, help, loopmidi, yamaha) = tokio::join!(
         main_app::detect(),
         cubase::detect(),
         ai_lyrics::detect(),
@@ -98,6 +99,7 @@ pub async fn detect_all() -> Vec<(&'static str, DetectionResult)> {
         resources::detect(),
         help_files::detect(),
         loopmidi::detect(),
+        yamaha_steinberg::detect(),
     );
 
     vec![
@@ -109,6 +111,7 @@ pub async fn detect_all() -> Vec<(&'static str, DetectionResult)> {
         ("smartbridge-resources", resources),
         ("help-files", help),
         ("windows-loopmidi", loopmidi),
+        ("yamaha-steinberg-driver", yamaha),
     ]
 }
 
@@ -123,6 +126,7 @@ pub async fn detect_one(component_id: &str) -> Option<DetectionResult> {
         "smartbridge-resources" => resources::detect().await,
         "help-files" => help_files::detect().await,
         "windows-loopmidi" => loopmidi::detect().await,
+        "yamaha-steinberg-driver" => yamaha_steinberg::detect().await,
         _ => return None,
     })
 }

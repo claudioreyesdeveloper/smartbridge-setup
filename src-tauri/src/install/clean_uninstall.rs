@@ -41,6 +41,7 @@ const COMPONENT_ORDER: &[&str] = &[
     "smartbridge-resources",
     "help-files",
     "windows-loopmidi",
+    "yamaha-steinberg-driver",
 ];
 
 fn is_ollama_component(component_id: &str) -> bool {

@@ -120,9 +120,9 @@ export const MESSAGES: Record<Locale, Messages> = {
     activate_invalid:
       "That code does not match this email. Please check both and try again.",
 
-    profile_lead: "What do you use?",
+    profile_lead: "One optional extra.",
     profile_body:
-      "Tell us about the music programs on your computer so we can set up the right things. There is no wrong answer.",
+      "SmartBridge will set up the normal music connections automatically. Please choose whether you also want AI lyrics.",
     profile_q_cubase: "Do you use Cubase?",
     profile_q_cubase_sub:
       "Cubase is a music production program by Steinberg.",
@@ -212,9 +212,9 @@ export const MESSAGES: Record<Locale, Messages> = {
     activate_invalid:
       "Dieser Code passt nicht zu dieser E-Mail-Adresse. Bitte pr\u00fcfen Sie beides und versuchen Sie es erneut.",
 
-    profile_lead: "Was benutzen Sie?",
+    profile_lead: "Eine optionale Zusatzfunktion.",
     profile_body:
-      "Sagen Sie uns, welche Musikprogramme auf Ihrem Computer sind. Dann richten wir nur das ein, was Sie brauchen.",
+      "SmartBridge richtet die normalen Musikverbindungen automatisch ein. Bitte wählen Sie nur aus, ob Sie auch KI-Liedtexte möchten.",
     profile_q_cubase: "Benutzen Sie Cubase?",
     profile_q_cubase_sub:
       "Cubase ist ein Musikprogramm von Steinberg.",

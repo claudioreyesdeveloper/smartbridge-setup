@@ -29,8 +29,6 @@ export interface HostInfo {
 }
 
 export interface ProfileChoice {
-  use_cubase: boolean;
-  use_synthv: boolean;
   use_ai_lyrics: boolean;
 }
 

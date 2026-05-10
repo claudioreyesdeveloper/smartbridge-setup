@@ -4,7 +4,7 @@
 //! aimed at users with very low computer skills. This module exposes the
 //! handful of high-level Tauri commands that the wizard talks to:
 //!
-//!   * `install_plan`       - given the user's three yes/no answers,
+//!   * `install_plan`       - given the user's AI lyrics choice,
 //!                             returns the ordered list of components to
 //!                             install on the current host. Pure data:
 //!                             the frontend uses it to render "We will
@@ -41,12 +41,10 @@ pub const HELP_EMAIL_ADDRESS: &str = "claudio.private@gmail.com";
 // Plan
 // =============================================================================
 
-/// The three yes/no answers the wizard collects on its profile screen.
-/// Anything not represented here is decided automatically.
+/// The only user choice in the wizard. Everything safe and useful is
+/// decided automatically so low-skill users cannot pick the wrong option.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ProfileChoice {
-    pub use_cubase: bool,
-    pub use_synthv: bool,
     pub use_ai_lyrics: bool,
 }
 
@@ -91,8 +89,13 @@ const ALL_STEPS: &[PlanStep] = &[
     },
     PlanStep {
         component_id: "windows-loopmidi",
-        label_en: "Adding the music cable Cubase needs",
-        label_de: "Audio-Verbindung f\u{fc}r Cubase wird eingerichtet",
+        label_en: "Adding the Windows music cable",
+        label_de: "Windows-Musikverbindung wird eingerichtet",
+    },
+    PlanStep {
+        component_id: "yamaha-steinberg-driver",
+        label_en: "Checking the Yamaha USB driver",
+        label_de: "Yamaha-USB-Treiber wird gepr\u{fc}ft",
     },
     PlanStep {
         component_id: "synthv-connection",
@@ -125,18 +128,12 @@ pub fn install_plan(profile: ProfileChoice) -> InstallPlan {
         "help-files",
     ];
 
-    if profile.use_cubase {
-        ids.push("cubase-connection");
-        // loopMIDI is Windows-only - on macOS the IAC driver does the
-        // same job and the per-component install dispatcher would just
-        // error out, which would needlessly fail the whole wizard.
-        if host_is_windows {
-            ids.push("windows-loopmidi");
-        }
-    }
+    ids.push("cubase-connection");
+    ids.push("synthv-connection");
 
-    if profile.use_synthv {
-        ids.push("synthv-connection");
+    if host_is_windows {
+        ids.push("windows-loopmidi");
+        ids.push("yamaha-steinberg-driver");
     }
 
     if profile.use_ai_lyrics {

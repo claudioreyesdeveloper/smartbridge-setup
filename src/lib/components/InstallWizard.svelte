@@ -46,8 +46,6 @@
   let serial = $state("");
   let activationError = $state("");
   let profile = $state<ProfileChoice>({
-    use_cubase: false,
-    use_synthv: false,
     use_ai_lyrics: false,
   });
   let plan = $state<InstallPlan | null>(null);
@@ -300,30 +298,6 @@
   <section class="card">
     <h1>{text(locale, "profile_lead")}</h1>
     <p class="lead">{text(locale, "profile_body")}</p>
-
-    <button
-      class:selected={profile.use_cubase}
-      class="choice"
-      onclick={() => profile.use_cubase = !profile.use_cubase}
-    >
-      <span class="choice-radio"></span>
-      <span class="choice-body">
-        <span class="choice-title">{text(locale, "profile_q_cubase")}</span>
-        <span class="choice-sub">{text(locale, "profile_q_cubase_sub")}</span>
-      </span>
-    </button>
-
-    <button
-      class:selected={profile.use_synthv}
-      class="choice"
-      onclick={() => profile.use_synthv = !profile.use_synthv}
-    >
-      <span class="choice-radio"></span>
-      <span class="choice-body">
-        <span class="choice-title">{text(locale, "profile_q_synthv")}</span>
-        <span class="choice-sub">{text(locale, "profile_q_synthv_sub")}</span>
-      </span>
-    </button>
 
     <button
       class:selected={profile.use_ai_lyrics}
