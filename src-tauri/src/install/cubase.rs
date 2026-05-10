@@ -199,7 +199,7 @@ fn cubase_prefs_dir(version: u32) -> PathBuf {
     #[cfg(target_os = "windows")]
     {
         dirs::config_dir()
-            .map(|c| c.join("Steinberg").join(format!("Cubase {version}")))
+            .map(|c| c.join("Steinberg").join(format!("Cubase {version}_64")))
             .unwrap_or_default()
     }
 

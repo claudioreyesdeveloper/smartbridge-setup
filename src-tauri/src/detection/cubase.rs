@@ -10,7 +10,7 @@
 //! Project template (per Cubase major version; we look at 12-15 today;
 //! when 16 ships, add it here):
 //!   macOS:   ~/Library/Preferences/Cubase {VER}/Project Templates/SmartBridge.cpr
-//!   Windows: %APPDATA%\Steinberg\Cubase {VER}\Project Templates\SmartBridge.cpr
+//!   Windows: %APPDATA%\Steinberg\Cubase {VER}_64\Project Templates\SmartBridge.cpr
 //!
 //! Status logic:
 //!   * No Cubase folder found at all → NotInstalled with "Cubase not detected".
@@ -123,7 +123,7 @@ fn cubase_prefs_dir(version: u32) -> PathBuf {
     #[cfg(target_os = "windows")]
     {
         dirs::config_dir()
-            .map(|c| c.join("Steinberg").join(format!("Cubase {version}")))
+            .map(|c| c.join("Steinberg").join(format!("Cubase {version}_64")))
             .unwrap_or_default()
     }
 
