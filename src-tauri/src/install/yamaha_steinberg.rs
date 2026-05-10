@@ -38,6 +38,7 @@ pub async fn remove() -> InstallOutcome {
 mod windows_impl {
     use super::*;
     use std::process::Command;
+    use std::os::windows::process::CommandExt;
 
     pub async fn install_windows() -> InstallOutcome {
         let before = detection::yamaha_steinberg::detect().await;
@@ -49,19 +50,20 @@ mod windows_impl {
             .with_post_state(before);
         }
 
-        let output = match Command::new("winget")
-            .args([
-                "install",
-                "-e",
-                "--id",
-                "Yamaha.SteinbergUSBDriver",
-                "--silent",
-                "--accept-package-agreements",
-                "--accept-source-agreements",
-                "--disable-interactivity",
-            ])
-            .output()
-        {
+        let mut cmd = Command::new("winget");
+        cmd.args([
+            "install",
+            "-e",
+            "--id",
+            "Yamaha.SteinbergUSBDriver",
+            "--silent",
+            "--accept-package-agreements",
+            "--accept-source-agreements",
+            "--disable-interactivity",
+        ]);
+        cmd.creation_flags(0x08000000);
+
+        let output = match cmd.output() {
             Ok(output) => output,
             Err(e) => {
                 return InstallOutcome::err(

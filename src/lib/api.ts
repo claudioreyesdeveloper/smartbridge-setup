@@ -40,6 +40,14 @@ export function installAll(profile: ProfileChoice) {
   return invoke<InstallAllOutcome>("install_all", { profile });
 }
 
+export function cancelInstall() {
+  return invoke<void>("cancel_install");
+}
+
+export function undoSmartBridgeChanges() {
+  return invoke<UninstallAllOutcome>("undo_smartbridge_changes");
+}
+
 export function uninstallAll(keepUserData: boolean) {
   return invoke<UninstallAllOutcome>("uninstall_all", {
     keepUserData,

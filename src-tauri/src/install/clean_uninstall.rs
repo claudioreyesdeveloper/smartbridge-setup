@@ -44,6 +44,13 @@ const COMPONENT_ORDER: &[&str] = &[
     "yamaha-steinberg-driver",
 ];
 
+const SMARTBRIDGE_ONLY_COMPONENT_ORDER: &[&str] = &[
+    "cubase-connection",
+    "synthv-connection",
+    "smartbridge-resources",
+    "help-files",
+];
+
 fn is_ollama_component(component_id: &str) -> bool {
     component_id == "ai-lyrics" || component_id == "ai-lyrics-default-model"
 }
@@ -105,3 +112,51 @@ pub async fn run(remove_user_data: bool, remove_ollama_models: bool) -> InstallO
         InstallOutcome::ok(COMPONENT, messages).with_post_state(det)
     }
 }
+
+/// Undo only SmartBridge-managed files created by Setup. This deliberately
+/// leaves third-party tools and system drivers alone: Yamaha Steinberg USB
+/// Driver, loopMIDI, Ollama, and Ollama models may be shared with other apps.
+pub async fn run_smartbridge_only() -> InstallOutcome {
+    let mut messages: Vec<String> = Vec::new();
+    let mut had_error = false;
+
+    messages.push(
+        "SmartBridge-only undo starting. Third-party tools and drivers will be kept.".into(),
+    );
+    messages.push(
+        "Keeping Yamaha Steinberg USB Driver, loopMIDI, Ollama, and downloaded AI models.".into(),
+    );
+
+    for cid in SMARTBRIDGE_ONLY_COMPONENT_ORDER {
+        messages.push(format!("Removing `{cid}`..."));
+        let outcome = super::remove(cid).await;
+        if !outcome.success {
+            had_error = true;
+        }
+        for line in outcome.messages {
+            messages.push(format!("  [{cid}] {line}"));
+        }
+    }
+
+    messages.push("Removing `main-app` but keeping personal songs and settings...".to_string());
+    let outcome = main_app::uninstall(false).await;
+    if !outcome.success {
+        had_error = true;
+    }
+    for line in outcome.messages {
+        messages.push(format!("  [main-app] {line}"));
+    }
+
+    let det = detection::main_app::detect().await;
+    if had_error {
+        messages.push(
+            "One or more SmartBridge undo steps reported errors. Please use Get help by email."
+                .into(),
+        );
+        InstallOutcome::err(COMPONENT, messages).with_post_state(det)
+    } else {
+        messages.push("SmartBridge-only undo finished without errors.".into());
+        InstallOutcome::ok(COMPONENT, messages).with_post_state(det)
+    }
+}
+

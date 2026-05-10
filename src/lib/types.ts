@@ -65,6 +65,7 @@ export interface DownloadProgress {
 
 export interface InstallAllOutcome {
   success: boolean;
+  cancelled: boolean;
   failed_step_index: number | null;
   failed_component_id: string | null;
   failure_message: string;

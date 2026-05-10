@@ -4,12 +4,14 @@
   import { onDestroy, onMount } from "svelte";
   import {
     activateBeta,
+    cancelInstall,
     checkInternetConnection,
     getHelpByEmail,
     getHostInfo,
     getInstallPlan,
     getLicenseStatus,
     installAll,
+    undoSmartBridgeChanges,
   } from "$lib/api";
   import { fill, text, type Locale } from "$lib/i18n/messages";
   import type {
@@ -36,6 +38,9 @@
     | "profile"
     | "ready"
     | "installing"
+    | "cancelled"
+    | "undoing"
+    | "undone"
     | "done"
     | "error";
 
@@ -53,6 +58,8 @@
   let plan = $state<InstallPlan | null>(null);
   let currentStep = $state<WizardStepEvent | null>(null);
   let installError = $state("");
+  let cancelRequested = $state(false);
+  let undoError = $state("");
   let internetBusy = $state(false);
   let helpOutcome = $state<HelpEmailOutcome | null>(null);
   let helpBusy = $state(false);
@@ -284,12 +291,43 @@
       const outcome = await installAll(profile);
       if (outcome.success) {
         screen = "done";
+      } else if (outcome.cancelled) {
+        screen = "cancelled";
       } else {
         installError = outcome.failure_message || text(locale, "error_body");
         screen = "error";
       }
     } catch (e) {
       installError = friendlyLoadError(e);
+      screen = "error";
+    }
+  }
+
+  async function requestCancel() {
+    cancelRequested = true;
+    try {
+      await cancelInstall();
+    } catch (e) {
+      installError = friendlyLoadError(e);
+    }
+  }
+
+  async function undoChanges() {
+    undoError = "";
+    helpOutcome = null;
+    screen = "undoing";
+    try {
+      const outcome = await undoSmartBridgeChanges();
+      if (outcome.success) {
+        screen = "undone";
+      } else {
+        undoError = outcome.messages.join("\n") || text(locale, "undo_failed_body");
+        screen = "error";
+        installError = text(locale, "undo_failed_body");
+      }
+    } catch (e) {
+      undoError = friendlyLoadError(e);
+      installError = undoError;
       screen = "error";
     }
   }
@@ -444,7 +482,9 @@
 {:else if screen === "installing"}
   <section class="card">
     <h1>{text(locale, "installing_lead")}</h1>
-    <p class="lead">{text(locale, "installing_warning_dont_close")}</p>
+    <p class="lead">
+      {cancelRequested ? text(locale, "installing_cancel_requested") : text(locale, "installing_warning_dont_close")}
+    </p>
     <div
       class="progress-track"
       role="progressbar"
@@ -486,6 +526,44 @@
       {:else}
         {text(locale, "generic_loading")}
       {/if}
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary btn-block" onclick={requestCancel} disabled={cancelRequested}>
+        {cancelRequested ? text(locale, "generic_loading") : text(locale, "installing_cancel_cta")}
+      </button>
+    </div>
+  </section>
+{:else if screen === "cancelled"}
+  <section class="card">
+    <h1>{text(locale, "cancelled_lead")}</h1>
+    <p class="lead">{text(locale, "cancelled_body")}</p>
+    <div class="alert">{text(locale, "cancelled_keep_helpers")}</div>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-block" onclick={undoChanges}>
+        {text(locale, "cancelled_cta_undo")}
+      </button>
+      <button class="btn btn-secondary btn-block" onclick={closeWindow}>
+        {text(locale, "cancelled_cta_close")}
+      </button>
+    </div>
+  </section>
+{:else if screen === "undoing"}
+  <section class="card">
+    <h1>{text(locale, "undoing_lead")}</h1>
+    <p class="lead">{text(locale, "undoing_body")}</p>
+    <div class="progress-track" aria-hidden="true">
+      <div class="progress-fill indeterminate"></div>
+    </div>
+  </section>
+{:else if screen === "undone"}
+  <section class="card done">
+    <div class="big-check">✓</div>
+    <h1>{text(locale, "undone_lead")}</h1>
+    <p class="lead">{text(locale, "undone_body")}</p>
+    <div class="btn-row">
+      <button class="btn btn-primary btn-block" onclick={closeWindow}>
+        {text(locale, "undone_cta_close")}
+      </button>
     </div>
   </section>
 {:else if screen === "done"}

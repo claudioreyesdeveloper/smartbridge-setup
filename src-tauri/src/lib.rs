@@ -89,7 +89,9 @@ pub fn run() {
             wizard::check_internet_connection,
             wizard::install_plan,
             wizard::install_all,
+            wizard::cancel_install,
             wizard::uninstall_all,
+            wizard::undo_smartbridge_changes,
             wizard::compose_help_email,
             // ---- Identity / mode ----
             commands::installer_version,

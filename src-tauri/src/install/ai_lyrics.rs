@@ -96,22 +96,22 @@ async fn ensure_ollama_runtime(messages: &mut Vec<String>) -> Result<PathBuf, Ve
     #[cfg(target_os = "windows")]
     {
         messages.push("Ollama is missing. Installing Ollama for AI lyrics.".into());
-        let output = match tokio::process::Command::new("winget")
-            .args([
-                "install",
-                "-e",
-                "--id",
-                "Ollama.Ollama",
-                "--silent",
-                "--accept-package-agreements",
-                "--accept-source-agreements",
-                "--disable-interactivity",
-                "--scope",
-                "user",
-            ])
-            .output()
-            .await
-        {
+        let mut cmd = tokio::process::Command::new("winget");
+        cmd.args([
+            "install",
+            "-e",
+            "--id",
+            "Ollama.Ollama",
+            "--silent",
+            "--accept-package-agreements",
+            "--accept-source-agreements",
+            "--disable-interactivity",
+            "--scope",
+            "user",
+        ]);
+        hide_console_window(&mut cmd);
+
+        let output = match cmd.output().await {
             Ok(output) => output,
             Err(e) => {
                 let mut err = messages.clone();
@@ -207,6 +207,7 @@ async fn run_ollama_pull(
     cmd.arg("pull").arg(tag);
     cmd.stdout(Stdio::piped());
     cmd.stderr(Stdio::piped());
+    hide_console_window(&mut cmd);
 
     let mut child = cmd
         .spawn()
@@ -372,5 +373,18 @@ pub async fn remove() -> InstallOutcome {
         let mut all = messages;
         all.extend(errors);
         InstallOutcome::err(COMPONENT, all).with_post_state(det)
+    }
+}
+
+fn hide_console_window(cmd: &mut tokio::process::Command) {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = cmd;
     }
 }

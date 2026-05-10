@@ -31,11 +31,13 @@ use crate::manifest;
 use crate::support_bundle;
 
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, Emitter};
 
 /// Where the in-app "Get help by email" button sends. Centralised so it
 /// can be changed in one place without touching the frontend.
 pub const HELP_EMAIL_ADDRESS: &str = "claudio.private@gmail.com";
+static CANCEL_INSTALL_REQUESTED: AtomicBool = AtomicBool::new(false);
 
 // =============================================================================
 // Plan
@@ -112,13 +114,13 @@ const ALL_STEPS: &[PlanStep] = &[
     },
     PlanStep {
         component_id: "windows-loopmidi",
-        label_en: "Adding the Windows music cable",
-        label_de: "Windows-Musikverbindung wird eingerichtet",
+        label_en: "Installing the Windows virtual music cable (loopMIDI)",
+        label_de: "Virtuelle Windows-Musikverbindung wird installiert (loopMIDI)",
     },
     PlanStep {
         component_id: "yamaha-steinberg-driver",
-        label_en: "Checking the Yamaha USB driver",
-        label_de: "Yamaha-USB-Treiber wird gepr\u{fc}ft",
+        label_en: "Installing the Yamaha Steinberg USB driver if it is missing",
+        label_de: "Yamaha-Steinberg-USB-Treiber wird bei Bedarf installiert",
     },
     PlanStep {
         component_id: "synthv-connection",
@@ -127,8 +129,8 @@ const ALL_STEPS: &[PlanStep] = &[
     },
     PlanStep {
         component_id: "ai-lyrics",
-        label_en: "Setting up lyric suggestions",
-        label_de: "Liedtext-Vorschl\u{e4}ge werden eingerichtet",
+        label_en: "Installing Ollama for AI lyrics if it is missing",
+        label_de: "Ollama f\u{fc}r KI-Liedtexte wird bei Bedarf installiert",
     },
     PlanStep {
         component_id: "ai-lyrics-default-model",
@@ -190,6 +192,7 @@ pub struct WizardStepEvent {
 #[derive(Debug, Clone, Serialize)]
 pub struct InstallAllOutcome {
     pub success: bool,
+    pub cancelled: bool,
     pub failed_step_index: Option<u32>,
     pub failed_component_id: Option<String>,
     /// Pre-mapped, plain-language sentence the wizard can render verbatim.
@@ -205,6 +208,7 @@ pub async fn install_all(
     app: AppHandle,
     profile: ProfileChoice,
 ) -> Result<InstallAllOutcome, String> {
+    CANCEL_INSTALL_REQUESTED.store(false, Ordering::SeqCst);
     let plan = install_plan(profile);
     let total = plan.steps.len() as u32;
 
@@ -257,6 +261,7 @@ pub async fn install_all(
             );
             return Ok(InstallAllOutcome {
                 success: false,
+                cancelled: false,
                 failed_step_index: Some(idx),
                 failed_component_id: Some(step.component_id.to_string()),
                 failure_message: msg,
@@ -274,11 +279,29 @@ pub async fn install_all(
                 failure_message: None,
             },
         );
+
+        if CANCEL_INSTALL_REQUESTED.load(Ordering::SeqCst) {
+            tracing::info!(
+                target: "wizard",
+                component = step.component_id,
+                step_index = idx,
+                "install_all cancelled after completed step",
+            );
+            return Ok(InstallAllOutcome {
+                success: false,
+                cancelled: true,
+                failed_step_index: None,
+                failed_component_id: None,
+                failure_message: "Setup stopped safely after finishing the current step.".into(),
+                step_messages,
+            });
+        }
     }
 
     tracing::info!(target: "wizard", "install_all completed successfully");
     Ok(InstallAllOutcome {
         success: true,
+        cancelled: false,
         failed_step_index: None,
         failed_component_id: None,
         failure_message: String::new(),
@@ -365,6 +388,12 @@ fn friendly_failure_message(component_id: &str, messages: &[String]) -> String {
 // Uninstall
 // =============================================================================
 
+#[tauri::command]
+pub fn cancel_install() {
+    CANCEL_INSTALL_REQUESTED.store(true, Ordering::SeqCst);
+    tracing::info!(target: "wizard", "install cancellation requested");
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct UninstallAllOutcome {
     pub success: bool,
@@ -389,6 +418,16 @@ pub async fn uninstall_all(keep_user_data: bool) -> UninstallAllOutcome {
     );
     let outcome =
         install::clean_uninstall::run(remove_user_data, remove_ollama_models).await;
+    UninstallAllOutcome {
+        success: outcome.success,
+        messages: outcome.messages,
+    }
+}
+
+#[tauri::command]
+pub async fn undo_smartbridge_changes() -> UninstallAllOutcome {
+    tracing::info!(target: "wizard", "undo_smartbridge_changes dispatch");
+    let outcome = install::clean_uninstall::run_smartbridge_only().await;
     UninstallAllOutcome {
         success: outcome.success,
         messages: outcome.messages,
