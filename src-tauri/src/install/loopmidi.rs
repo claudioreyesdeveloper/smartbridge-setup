@@ -72,6 +72,7 @@ pub async fn remove() -> InstallOutcome {
 #[cfg(target_os = "windows")]
 mod windows_impl {
     use super::*;
+    use crate::commands::ComponentState;
     use crate::install::zip_util::extract_zip;
     use std::path::{Path, PathBuf};
     use std::process::Command;
@@ -177,7 +178,15 @@ mod windows_impl {
             }
         }
 
+        // Final proof: do not claim success unless Windows can actually see
+        // the two SmartBridge MIDI ports. If loopMIDI's command-line creation
+        // did nothing on this machine, stop here and ask for manual creation.
+        tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
         let det = detection::loopmidi::detect().await;
+        if det.state != ComponentState::Ready {
+            messages.extend(det.details.iter().cloned());
+            errors.push(manual_port_creation_message());
+        }
 
         if errors.is_empty() {
             InstallOutcome::ok(COMPONENT, messages).with_post_state(det)
@@ -186,6 +195,15 @@ mod windows_impl {
             all.extend(errors);
             InstallOutcome::err(COMPONENT, all).with_post_state(det)
         }
+    }
+
+
+    fn manual_port_creation_message() -> String {
+        format!(
+            "loopMIDI is installed, but SmartBridge could not create the two ports automatically. Open loopMIDI, add a port named '{out}', add a second port named '{inp}', then run SmartBridge Setup again.",
+            out = PORT_OUT_NAME,
+            inp = PORT_IN_NAME
+        )
     }
 
     async fn download_and_install_loopmidi() -> Result<PathBuf, String> {
