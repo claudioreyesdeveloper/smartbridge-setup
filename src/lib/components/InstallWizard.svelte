@@ -12,6 +12,7 @@
   } from "$lib/api";
   import { fill, text, type Locale } from "$lib/i18n/messages";
   import type {
+    DownloadProgress,
     HelpEmailOutcome,
     HostInfo,
     InstallPlan,
@@ -55,18 +56,51 @@
   let helpOutcome = $state<HelpEmailOutcome | null>(null);
   let helpBusy = $state(false);
   let unlistenStep: UnlistenFn | null = null;
+  let unlistenDownload: UnlistenFn | null = null;
+  let downloads = $state<Record<string, DownloadProgress>>({});
 
   const isMac = $derived(host?.os === "macos");
   const doneBody = $derived(
     isMac ? text(locale, "done_body_macos") : text(locale, "done_body_windows")
   );
   const planSteps = $derived(plan?.steps ?? []);
+  const currentDownload = $derived(
+    currentStep
+      ? Object.values(downloads)
+          .filter((p) => p.download_id.startsWith(currentStep!.component_id))
+          .sort((a, b) => phaseRank(b.phase) - phaseRank(a.phase))[0] ?? null
+      : null
+  );
+  const currentStepText = $derived(
+    currentStep
+      ? stepLabel(
+          planSteps.find((step) => step.component_id === currentStep!.component_id) ?? {
+            component_id: currentStep.component_id,
+            label_en: "Working on SmartBridge",
+            label_de: "SmartBridge wird eingerichtet",
+          }
+        )
+      : text(locale, "generic_loading")
+  );
+  const currentStepFraction = $derived(
+    currentDownload && currentDownload.bytes_total > 0
+      ? Math.min(0.95, currentDownload.bytes_downloaded / currentDownload.bytes_total)
+      : currentStep?.status === "ok"
+        ? 1
+        : 0
+  );
+  const progressIsIndeterminate = $derived(
+    screen === "installing" &&
+      !!currentStep &&
+      currentStep.status === "starting" &&
+      !currentDownload
+  );
   const progressPercent = $derived(
     currentStep
       ? Math.min(
           100,
           Math.round(
-            ((currentStep.step_index + (currentStep.status === "ok" ? 1 : 0)) /
+            ((currentStep.step_index + currentStepFraction) /
               Math.max(currentStep.step_count, 1)) *
               100
           )
@@ -78,6 +112,13 @@
     unlistenStep = await listen<WizardStepEvent>("wizard://step", (event) => {
       currentStep = event.payload;
     });
+    unlistenDownload = await listen<DownloadProgress>(
+      "download://progress",
+      (event) => {
+        const p = event.payload;
+        downloads = { ...downloads, [p.download_id]: p };
+      }
+    );
 
     try {
       [license, host] = await Promise.all([getLicenseStatus(), getHostInfo()]);
@@ -94,10 +135,39 @@
 
   onDestroy(() => {
     unlistenStep?.();
+    unlistenDownload?.();
   });
 
   function stepLabel(step: PlanStep) {
     return locale === "de" ? step.label_de : step.label_en;
+  }
+
+  function phaseRank(phase: DownloadProgress["phase"]) {
+    switch (phase) {
+      case "verified":
+      case "verified_local":
+      case "cache_hit":
+        return 3;
+      case "downloading":
+      case "verifying_local":
+        return 2;
+      case "starting":
+      default:
+        return 1;
+    }
+  }
+
+  function formatBytes(bytes: number) {
+    if (bytes >= 1024 * 1024 * 1024) {
+      return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+    }
+    if (bytes >= 1024 * 1024) {
+      return `${Math.round(bytes / (1024 * 1024))} MB`;
+    }
+    if (bytes >= 1024) {
+      return `${Math.round(bytes / 1024)} KB`;
+    }
+    return `${bytes} bytes`;
   }
 
   async function closeWindow() {
@@ -122,6 +192,7 @@
 
   async function beginInstall() {
     currentStep = null;
+    downloads = {};
     installError = "";
     helpOutcome = null;
     screen = "installing";
@@ -272,8 +343,18 @@
   <section class="card">
     <h1>{text(locale, "installing_lead")}</h1>
     <p class="lead">{text(locale, "installing_warning_dont_close")}</p>
-    <div class="progress-track" role="progressbar" aria-valuenow={progressPercent} aria-valuemin="0" aria-valuemax="100">
-      <div class="progress-fill" style={`width: ${progressPercent}%`}></div>
+    <div
+      class="progress-track"
+      role="progressbar"
+      aria-valuenow={progressPercent}
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
+      <div
+        class="progress-fill"
+        class:indeterminate={progressIsIndeterminate}
+        style={progressIsIndeterminate ? "" : `width: ${progressPercent}%`}
+      ></div>
     </div>
     <div class="progress-label">
       {#if currentStep}
@@ -281,6 +362,16 @@
           current: currentStep.step_index + 1,
           total: currentStep.step_count,
         })}
+        <div class="current-step">{currentStepText}</div>
+        {#if currentDownload && currentDownload.bytes_total > 0}
+          <div class="download-detail">
+            {formatBytes(currentDownload.bytes_downloaded)} of {formatBytes(currentDownload.bytes_total)}
+          </div>
+        {:else if isMac && currentStep.component_id === "main-app"}
+          <div class="download-detail">
+            Downloading the installer. Apple Installer may open in a separate window.
+          </div>
+        {/if}
       {:else}
         {text(locale, "generic_loading")}
       {/if}
@@ -347,5 +438,16 @@
 
   .done {
     text-align: center;
+  }
+
+  .current-step {
+    margin-top: 8px;
+    font-weight: 600;
+  }
+
+  .download-detail {
+    margin-top: 4px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
   }
 </style>

@@ -52,6 +52,19 @@ export interface WizardStepEvent {
   failure_message: string | null;
 }
 
+export interface DownloadProgress {
+  download_id: string;
+  bytes_downloaded: number;
+  bytes_total: number;
+  phase:
+    | "starting"
+    | "downloading"
+    | "verified"
+    | "cache_hit"
+    | "verifying_local"
+    | "verified_local";
+}
+
 export interface InstallAllOutcome {
   success: boolean;
   failed_step_index: number | null;
