@@ -6,7 +6,7 @@
 //!   /Applications/Synthesizer V Studio[ 2].app           (host detection)
 //!
 //! Windows:
-//!   %APPDATA%\Dreamtonics\Synthesizer V Studio[ 2]\scripts\synthv_smartbridge_sidepanel.lua
+//!   %USERPROFILE%\Documents\Dreamtonics\Synthesizer V Studio[ 2]\scripts\synthv_smartbridge_sidepanel.lua
 //!   %PROGRAMFILES%\Dreamtonics\Synthesizer V Studio[ 2]  (host detection)
 
 use super::DetectionResult;
@@ -44,16 +44,18 @@ pub async fn detect() -> DetectionResult {
         let installed = studio_installed(studio);
         let script_path = studio_script_path(studio);
 
-        if installed {
-            any_studio_detected = true;
+        if !installed {
+            continue;
         }
+
+        any_studio_detected = true;
         if script_path.exists() {
             present.push(format!(
                 "{}: script at {}",
                 studio.label(),
                 script_path.display()
             ));
-        } else if installed {
+        } else {
             missing.push(format!(
                 "{}: script not installed at {}",
                 studio.label(),
@@ -96,9 +98,6 @@ fn studio_installed(studio: Studio) -> bool {
     studio_app_dir(studio)
         .map(|p| p.exists())
         .unwrap_or(false)
-        || studio_data_dir(studio)
-            .map(|p| p.exists())
-            .unwrap_or(false)
 }
 
 fn studio_app_dir(studio: Studio) -> Option<PathBuf> {
@@ -140,7 +139,7 @@ fn studio_data_dir(studio: Studio) -> Option<PathBuf> {
 
     #[cfg(target_os = "windows")]
     {
-        dirs::config_dir().map(|c| c.join("Dreamtonics").join(studio.dir_name()))
+        dirs::document_dir().map(|d| d.join("Dreamtonics").join(studio.dir_name()))
     }
 
     #[cfg(all(unix, not(target_os = "macos")))]

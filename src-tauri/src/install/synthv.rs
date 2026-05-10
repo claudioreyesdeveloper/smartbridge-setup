@@ -1,10 +1,9 @@
 //! synthv-connection install: places the side-panel lua script in the
 //! scripts folder of every detected SynthV Studio install (1 and 2).
 //!
-//! If neither SynthV is installed, we still place the script under the
-//! Studio 2 path (the more common modern install) and leave a note —
-//! that way users who install SynthV later just need to relaunch SmartBridge
-//! Setup and click "Check again" to confirm it picks the file up.
+//! If SynthV is not installed, we skip this component cleanly. Re-running
+//! Setup later will install or refresh the SmartBridge script once SynthV is
+//! present.
 
 use super::InstallOutcome;
 use crate::detection;
@@ -22,6 +21,32 @@ pub async fn install(app: &AppHandle, manifest: &Manifest) -> InstallOutcome {
         Some(c) => c,
         None => return InstallOutcome::err(COMPONENT, vec![format!("manifest missing component {COMPONENT}")]),
     };
+    let mut targets: Vec<PathBuf> = Vec::new();
+    let (s1, s2) = (studio_data_dir("Synthesizer V Studio"), studio_data_dir("Synthesizer V Studio 2"));
+
+    if let Some(p) = s1.filter(|_| studio_app_present("Synthesizer V Studio")) {
+        targets.push(p.join("scripts").join(SCRIPT_FILE));
+    }
+    if let Some(p) = s2.filter(|_| studio_app_present("Synthesizer V Studio 2")) {
+        targets.push(p.join("scripts").join(SCRIPT_FILE));
+    }
+
+    let mut messages: Vec<String> = Vec::new();
+    let mut errors: Vec<String> = Vec::new();
+    remove_legacy_appdata_scripts(&mut messages, &mut errors);
+
+    if targets.is_empty() {
+        let det = detection::synthv::detect().await;
+        messages.push("Synthesizer V Studio was not found. Skipped the SmartBridge Synthesizer V script.".into());
+        return if errors.is_empty() {
+            InstallOutcome::ok(COMPONENT, messages).with_post_state(det)
+        } else {
+            let mut all = messages;
+            all.extend(errors);
+            InstallOutcome::err(COMPONENT, all).with_post_state(det)
+        };
+    }
+
     let asset = match component.asset(ASSET_ID) {
         Some(a) => a,
         None => return InstallOutcome::err(COMPONENT, vec![format!("manifest missing asset {ASSET_ID}")]),
@@ -36,26 +61,6 @@ pub async fn install(app: &AppHandle, manifest: &Manifest) -> InstallOutcome {
         Err(e) => return InstallOutcome::err(COMPONENT, vec![format!("download failed: {e}")]),
     };
 
-    let mut targets: Vec<PathBuf> = Vec::new();
-    let (s1, s2) = (studio_data_dir("Synthesizer V Studio"), studio_data_dir("Synthesizer V Studio 2"));
-
-    let s1_present = studio_app_present("Synthesizer V Studio") || s1.as_ref().map(|p| p.exists()).unwrap_or(false);
-    let s2_present = studio_app_present("Synthesizer V Studio 2") || s2.as_ref().map(|p| p.exists()).unwrap_or(false);
-
-    if let Some(p) = s1.filter(|_| s1_present) {
-        targets.push(p.join("scripts").join(SCRIPT_FILE));
-    }
-    if let Some(p) = s2.filter(|_| s2_present) {
-        targets.push(p.join("scripts").join(SCRIPT_FILE));
-    }
-    if targets.is_empty() {
-        if let Some(p) = studio_data_dir("Synthesizer V Studio 2") {
-            targets.push(p.join("scripts").join(SCRIPT_FILE));
-        }
-    }
-
-    let mut messages: Vec<String> = Vec::new();
-    let mut errors: Vec<String> = Vec::new();
     for target in targets {
         if let Some(parent) = target.parent() {
             if let Err(e) = std::fs::create_dir_all(parent) {
@@ -89,15 +94,10 @@ pub async fn remove() -> InstallOutcome {
 
     for studio_name in ["Synthesizer V Studio", "Synthesizer V Studio 2"] {
         if let Some(base) = studio_data_dir(studio_name) {
-            let target = base.join("scripts").join(SCRIPT_FILE);
-            if target.exists() {
-                match std::fs::remove_file(&target) {
-                    Ok(()) => messages.push(format!("Removed {}", target.display())),
-                    Err(e) => errors.push(format!("remove {}: {e}", target.display())),
-                }
-            }
+            remove_script_at(base.join("scripts").join(SCRIPT_FILE), &mut messages, &mut errors);
         }
     }
+    remove_legacy_appdata_scripts(&mut messages, &mut errors);
 
     let det = detection::synthv::detect().await;
     if errors.is_empty() {
@@ -109,6 +109,36 @@ pub async fn remove() -> InstallOutcome {
         let mut all = messages;
         all.extend(errors);
         InstallOutcome::err(COMPONENT, all).with_post_state(det)
+    }
+}
+
+fn remove_legacy_appdata_scripts(messages: &mut Vec<String>, errors: &mut Vec<String>) {
+    for studio_name in ["Synthesizer V Studio", "Synthesizer V Studio 2"] {
+        if let Some(base) = legacy_appdata_dir(studio_name) {
+            remove_script_at(base.join("scripts").join(SCRIPT_FILE), messages, errors);
+        }
+    }
+}
+
+fn remove_script_at(target: PathBuf, messages: &mut Vec<String>, errors: &mut Vec<String>) {
+    if target.exists() {
+        match std::fs::remove_file(&target) {
+            Ok(()) => messages.push(format!("Removed {}", target.display())),
+            Err(e) => errors.push(format!("remove {}: {e}", target.display())),
+        }
+    }
+}
+
+fn legacy_appdata_dir(dir_name: &str) -> Option<PathBuf> {
+    #[cfg(target_os = "windows")]
+    {
+        dirs::config_dir().map(|c| c.join("Dreamtonics").join(dir_name))
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = dir_name;
+        None
     }
 }
 
@@ -125,7 +155,7 @@ fn studio_data_dir(dir_name: &str) -> Option<PathBuf> {
 
     #[cfg(target_os = "windows")]
     {
-        dirs::config_dir().map(|c| c.join("Dreamtonics").join(dir_name))
+        dirs::document_dir().map(|d| d.join("Dreamtonics").join(dir_name))
     }
 
     #[cfg(all(unix, not(target_os = "macos")))]
