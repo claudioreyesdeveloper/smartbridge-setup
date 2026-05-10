@@ -1,0 +1,62 @@
+[package]
+name = "smartbridge-setup"
+version = "0.2.1"
+description = "SmartBridge Component Installer"
+authors = ["Claudio Reyes"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "smartbridge_setup_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+dirs = "5"
+anyhow = "1"
+thiserror = "1"
+once_cell = "1"
+
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "process", "io-util"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
+sha2 = "0.10"
+hex = "0.4"
+futures-util = "0.3"
+
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+tracing-appender = "0.2"
+
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
+
+# PE / Mach-O / ELF binary parsing — used by the preflight DLL walk to read
+# the import table of the .vst3 / .exe and check that every imported DLL is
+# actually loadable on the customer's machine. Keeps us off heavyweight
+# helpers like depends.exe or the windows-sys crate; goblin is pure-Rust
+# and builds fine on every host (we only invoke it on Windows but the
+# parser itself is cross-platform so it stays in regular cfg).
+goblin = { version = "0.8", default-features = false, features = ["pe32", "pe64", "std"] }
+
+# Zip extraction for the loopMIDI installer (Tobias Erichsen ships a .zip
+# containing loopMIDISetup_*.exe). Default features pull in deflate +
+# bzip2 codecs, but we only ever need plain deflate so disable defaults
+# and re-enable just `deflate` to keep the binary small.
+zip = { version = "2", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

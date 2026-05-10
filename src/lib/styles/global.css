@@ -1,0 +1,480 @@
+/* SmartBridge Setup - global wizard styles.
+ *
+ * Visual contract (locked in for the pensioner audience):
+ *   - Light, calm, very high contrast.
+ *   - Base font 22px, 1.5 line-height.
+ *   - Tap targets: every interactive element >= 56px tall.
+ *   - One column, one screen at a time, max content width 720px.
+ *   - Focus ring is ALWAYS visible and very obvious - users
+ *     navigating with the keyboard or with shaky hands need to see
+ *     where focus is at a glance.
+ *   - No hover-only affordances.
+ *   - No animations longer than 250ms (jittery for older eyes).
+ */
+
+:root {
+  color-scheme: light;
+  --bg: #fafaf7;
+  --surface: #ffffff;
+  --surface-2: #f1efe9;
+  --border: #d6d3cc;
+  --text: #1a1a1a;
+  --text-muted: #555555;
+  --primary: #1d4ed8;
+  --primary-hover: #1e40af;
+  --primary-text: #ffffff;
+  --secondary-bg: #ffffff;
+  --secondary-text: #1d4ed8;
+  --secondary-border: #1d4ed8;
+  --danger: #b91c1c;
+  --danger-hover: #991b1b;
+  --success: #15803d;
+  --warning-bg: #fef3c7;
+  --warning-text: #92400e;
+  --error-bg: #fee2e2;
+  --error-text: #991b1b;
+  --focus-ring: #f59e0b;
+}
+
+:root.high-contrast {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #eeeeee;
+  --border: #000000;
+  --text: #000000;
+  --text-muted: #1f1f1f;
+  --primary: #000000;
+  --primary-hover: #1f1f1f;
+  --primary-text: #ffffff;
+  --secondary-bg: #ffffff;
+  --secondary-text: #000000;
+  --secondary-border: #000000;
+  --danger: #7f0000;
+  --danger-hover: #5a0000;
+  --success: #003300;
+  --focus-ring: #ff7700;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", system-ui,
+    sans-serif;
+  font-size: 22px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* User-select OFF on chrome / decoration text but ON for things the
+ * user might want to copy (error sentences, paths). */
+body {
+  user-select: none;
+}
+
+p,
+.selectable {
+  user-select: text;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+h1 {
+  font-size: 2rem; /* 44px */
+}
+
+h2 {
+  font-size: 1.4rem; /* ~31px */
+  margin-bottom: 0.5em;
+}
+
+h3 {
+  font-size: 1.15rem; /* ~25px */
+  margin-bottom: 0.3em;
+}
+
+p {
+  margin: 0 0 1em 0;
+  color: var(--text);
+}
+
+a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 4px solid var(--focus-ring);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ------- Buttons ------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  padding: 0 28px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: var(--surface-2);
+  color: var(--text);
+  transition: background-color 120ms ease, transform 120ms ease;
+  text-align: center;
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-text);
+  border-color: var(--primary);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.btn-secondary {
+  background: var(--secondary-bg);
+  color: var(--secondary-text);
+  border-color: var(--secondary-border);
+}
+
+.btn-secondary:not(:disabled):hover {
+  background: #eef3ff;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: var(--primary-text);
+  border-color: var(--danger);
+}
+
+.btn-danger:not(:disabled):hover {
+  background: var(--danger-hover);
+  border-color: var(--danger-hover);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: transparent;
+  min-height: 48px;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.btn-ghost:not(:disabled):hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.btn-block {
+  display: flex;
+  width: 100%;
+}
+
+.btn-row {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+@media (min-width: 600px) {
+  .btn-row.btn-row-h {
+    flex-direction: row;
+  }
+  .btn-row.btn-row-h .btn {
+    flex: 1;
+  }
+}
+
+/* ------- Form fields ------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.field-label {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.input {
+  font: inherit;
+  font-size: 1.1rem;
+  min-height: 60px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.input:focus {
+  border-color: var(--primary);
+}
+
+/* ------- Banner-style messages (errors, info) ------- */
+
+.alert {
+  border-radius: 12px;
+  padding: 18px 22px;
+  margin-bottom: 18px;
+  font-size: 1rem;
+  line-height: 1.5;
+  border: 2px solid var(--border);
+  background: var(--surface);
+}
+
+.alert-error {
+  background: var(--error-bg);
+  border-color: var(--error-text);
+  color: var(--error-text);
+}
+
+.alert-warn {
+  background: var(--warning-bg);
+  border-color: var(--warning-text);
+  color: var(--warning-text);
+}
+
+/* ------- Big yes/no choice cards used by the Profile screen ------- */
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 24px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  cursor: pointer;
+  margin-bottom: 14px;
+  transition: border-color 120ms ease, background-color 120ms ease;
+  width: 100%;
+  text-align: left;
+}
+
+.choice:hover {
+  border-color: var(--primary);
+}
+
+.choice.selected {
+  border-color: var(--primary);
+  background: #eef3ff;
+}
+
+.choice-radio {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.choice.selected .choice-radio {
+  border-color: var(--primary);
+}
+
+.choice.selected .choice-radio::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.choice-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.choice-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.choice-sub {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+/* ------- Wizard shell ------- */
+
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.shell-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.shell-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.shell-main {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 720px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 40px 44px 36px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.card .lead {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+/* ------- Step indicator (1 of 5 etc) ------- */
+
+.step-indicator {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  letter-spacing: 0.02em;
+}
+
+/* ------- Progress bar ------- */
+
+.progress-track {
+  width: 100%;
+  height: 28px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 250ms ease;
+  width: 0%;
+}
+
+.progress-fill.indeterminate {
+  width: 30%;
+  animation: progress-march 1600ms infinite ease-in-out;
+}
+
+@keyframes progress-march {
+  0% {
+    margin-left: -30%;
+  }
+  100% {
+    margin-left: 100%;
+  }
+}
+
+.progress-label {
+  font-size: 1rem;
+  color: var(--text);
+  text-align: center;
+  min-height: 1.5em;
+}
+
+/* ------- Big done check ------- */
+
+.big-check {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--success);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+  font-size: 56px;
+  line-height: 1;
+}
+
+.big-cross {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+  font-size: 56px;
+  line-height: 1;
+}
