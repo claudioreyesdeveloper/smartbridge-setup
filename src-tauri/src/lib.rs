@@ -86,6 +86,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             // ---- New wizard surface (the only thing the frontend uses) ----
+            wizard::check_internet_connection,
             wizard::install_plan,
             wizard::install_all,
             wizard::uninstall_all,

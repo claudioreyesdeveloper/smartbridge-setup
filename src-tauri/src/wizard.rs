@@ -63,6 +63,29 @@ pub struct InstallPlan {
     pub steps: Vec<PlanStep>,
 }
 
+#[tauri::command]
+pub async fn check_internet_connection() -> Result<(), String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(8))
+        .build()
+        .map_err(|e| format!("Could not prepare the internet check: {e}"))?;
+
+    let response = client
+        .get(crate::manifest::MANIFEST_URL)
+        .send()
+        .await
+        .map_err(|e| format!("Could not reach SmartBridge downloads: {e}"))?;
+
+    if response.status().is_success() {
+        Ok(())
+    } else {
+        Err(format!(
+            "SmartBridge downloads answered with HTTP {}",
+            response.status()
+        ))
+    }
+}
+
 /// The full universe of steps the wizard knows how to render. The order
 /// here is the order they will be installed in. `install_plan` filters
 /// this list down based on the user's profile answers and the host OS.

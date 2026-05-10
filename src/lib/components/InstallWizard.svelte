@@ -4,6 +4,7 @@
   import { onDestroy, onMount } from "svelte";
   import {
     activateBeta,
+    checkInternetConnection,
     getHelpByEmail,
     getHostInfo,
     getInstallPlan,
@@ -30,6 +31,7 @@
   type Screen =
     | "loading"
     | "welcome"
+    | "internet"
     | "activate"
     | "profile"
     | "ready"
@@ -51,11 +53,13 @@
   let plan = $state<InstallPlan | null>(null);
   let currentStep = $state<WizardStepEvent | null>(null);
   let installError = $state("");
+  let internetBusy = $state(false);
   let helpOutcome = $state<HelpEmailOutcome | null>(null);
   let helpBusy = $state(false);
   let unlistenStep: UnlistenFn | null = null;
   let unlistenDownload: UnlistenFn | null = null;
   let downloads = $state<Record<string, DownloadProgress>>({});
+  let downloadStarts = $state<Record<string, { bytes: number; at: number }>>({});
 
   const isMac = $derived(host?.os === "macos");
   const doneBody = $derived(
@@ -115,6 +119,19 @@
       "download://progress",
       (event) => {
         const p = event.payload;
+        const previous = downloads[p.download_id];
+        const shouldResetEstimate =
+          !downloadStarts[p.download_id] ||
+          !previous ||
+          p.bytes_downloaded < previous.bytes_downloaded ||
+          p.phase === "starting";
+
+        if (shouldResetEstimate) {
+          downloadStarts = {
+            ...downloadStarts,
+            [p.download_id]: { bytes: p.bytes_downloaded, at: Date.now() },
+          };
+        }
         downloads = { ...downloads, [p.download_id]: p };
       }
     );
@@ -124,7 +141,7 @@
       if (license.flavor === "beta_0_1" && !license.activated) {
         screen = "activate";
       } else {
-        screen = "welcome";
+        await checkInternetBefore("welcome");
       }
     } catch (e) {
       installError = friendlyLoadError(e);
@@ -169,6 +186,41 @@
     return `${bytes} bytes`;
   }
 
+  function downloadTimeText(progress: DownloadProgress) {
+    if (progress.phase !== "downloading" || progress.bytes_total <= 0) return "";
+
+    const start = downloadStarts[progress.download_id];
+    if (!start) return text(locale, "download_time_estimating");
+
+    const elapsedSeconds = (Date.now() - start.at) / 1000;
+    const downloadedSinceStart = progress.bytes_downloaded - start.bytes;
+    if (elapsedSeconds < 3 || downloadedSinceStart <= 0) {
+      return text(locale, "download_time_estimating");
+    }
+
+    const bytesPerSecond = downloadedSinceStart / elapsedSeconds;
+    if (bytesPerSecond <= 0) return text(locale, "download_time_estimating");
+
+    const remainingBytes = Math.max(progress.bytes_total - progress.bytes_downloaded, 0);
+    const remainingSeconds = remainingBytes / bytesPerSecond;
+    return fill(text(locale, "download_time_remaining"), {
+      time: formatDuration(remainingSeconds),
+    });
+  }
+
+  function formatDuration(seconds: number) {
+    const minutes = Math.max(1, Math.round(seconds / 60));
+    if (minutes < 1) return text(locale, "time_less_than_minute");
+    if (minutes === 1) return text(locale, "time_one_minute");
+    if (minutes < 60) {
+      return fill(text(locale, "time_minutes"), { count: minutes });
+    }
+
+    const hours = Math.max(1, Math.round(minutes / 60));
+    if (hours === 1) return text(locale, "time_one_hour");
+    return fill(text(locale, "time_hours"), { count: hours });
+  }
+
   function phaseText() {
     if (!currentStep) return text(locale, "generic_loading");
 
@@ -206,20 +258,25 @@
     const outcome = await activateBeta(email, serial);
     license = outcome.status;
     if (outcome.ok) {
-      screen = "welcome";
+      await checkInternetBefore("welcome");
     } else {
       activationError = text(locale, "activate_invalid");
     }
   }
 
   async function preparePlan() {
+    const online = await checkInternetBefore("profile");
+    if (!online) return;
     plan = await getInstallPlan(profile);
     screen = "ready";
   }
 
   async function beginInstall() {
+    const online = await checkInternetBefore("ready");
+    if (!online) return;
     currentStep = null;
     downloads = {};
+    downloadStarts = {};
     installError = "";
     helpOutcome = null;
     screen = "installing";
@@ -234,6 +291,20 @@
     } catch (e) {
       installError = friendlyLoadError(e);
       screen = "error";
+    }
+  }
+
+  async function checkInternetBefore(nextScreen: Screen) {
+    internetBusy = true;
+    try {
+      await checkInternetConnection();
+      screen = nextScreen;
+      return true;
+    } catch {
+      screen = "internet";
+      return false;
+    } finally {
+      internetBusy = false;
     }
   }
 
@@ -262,6 +333,23 @@
     <h1>{text(locale, "generic_loading")}</h1>
     <div class="progress-track" aria-hidden="true">
       <div class="progress-fill indeterminate"></div>
+    </div>
+  </section>
+{:else if screen === "internet"}
+  <section class="card">
+    <h1>{text(locale, "internet_lead")}</h1>
+    <p class="lead">{text(locale, "internet_body")}</p>
+    <div class="btn-row btn-row-h">
+      <button class="btn btn-secondary" onclick={closeWindow}>
+        {text(locale, "generic_quit")}
+      </button>
+      <button
+        class="btn btn-primary"
+        onclick={() => checkInternetBefore("welcome")}
+        disabled={internetBusy}
+      >
+        {internetBusy ? text(locale, "generic_loading") : text(locale, "internet_cta_retry")}
+      </button>
     </div>
   </section>
 {:else if screen === "welcome"}
@@ -311,6 +399,12 @@
       </span>
     </button>
 
+    {#if profile.use_ai_lyrics}
+      <div class="alert">
+        {text(locale, "profile_long_warning")}
+      </div>
+    {/if}
+
     <div class="btn-row">
       <button class="btn btn-primary btn-block" onclick={preparePlan}>
         {text(locale, "profile_cta")}
@@ -325,6 +419,11 @@
         ? text(locale, "ready_body_one")
         : fill(text(locale, "ready_body_many"), { count: planSteps.length })}
     </p>
+    {#if profile.use_ai_lyrics}
+      <div class="alert">
+        {text(locale, "ready_long_warning")}
+      </div>
+    {/if}
     <details>
       <summary>{text(locale, "ready_what")}</summary>
       <ul>
@@ -369,8 +468,16 @@
         <div class="current-step">{currentStepText}</div>
         {#if currentDownload && currentDownload.bytes_total > 0}
           <div class="download-detail">
-            {formatBytes(currentDownload.bytes_downloaded)} of {formatBytes(currentDownload.bytes_total)}
+            {fill(text(locale, "download_detail"), {
+              downloaded: formatBytes(currentDownload.bytes_downloaded),
+              total: formatBytes(currentDownload.bytes_total),
+            })}
           </div>
+          {#if downloadTimeText(currentDownload)}
+            <div class="download-detail">
+              {downloadTimeText(currentDownload)}
+            </div>
+          {/if}
         {:else if isMac && currentStep.component_id === "main-app"}
           <div class="download-detail">
             macOS may show a small password prompt. That is normal.

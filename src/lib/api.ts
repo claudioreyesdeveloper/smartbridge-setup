@@ -32,6 +32,10 @@ export function getInstallPlan(profile: ProfileChoice) {
   return invoke<InstallPlan>("install_plan", { profile });
 }
 
+export function checkInternetConnection() {
+  return invoke<void>("check_internet_connection");
+}
+
 export function installAll(profile: ProfileChoice) {
   return invoke<InstallAllOutcome>("install_all", { profile });
 }
