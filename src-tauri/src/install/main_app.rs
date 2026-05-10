@@ -319,25 +319,49 @@ async fn install_macos(asset: &ManifestAsset, outcome: &DownloadOutcome) -> Inst
         },
     ];
 
-    match std::process::Command::new("/usr/bin/open")
-        .arg(&outcome.local_path)
-        .spawn()
+    let installer_cmd = format!(
+        "/usr/sbin/installer -pkg {} -target /",
+        shell_quote(outcome.local_path.as_path())
+    );
+    let apple_script = format!(
+        "do shell script {} with administrator privileges",
+        apple_script_quote(&installer_cmd)
+    );
+
+    match std::process::Command::new("/usr/bin/osascript")
+        .arg("-e")
+        .arg(apple_script)
+        .status()
     {
-        Ok(_) => {
-            messages.push(
-                "Launched Apple Installer. Complete it in the dialog that opened, \
-                 then click \"Check again\" on the Main app card to re-detect."
-                    .into(),
-            );
+        Ok(status) if status.success() => {
+            messages.push("Installed SmartBridge with the quiet macOS installer.".into());
+        }
+        Ok(status) => {
+            messages.push(format!(
+                "macOS did not allow the quiet installer to finish (exit code {}).",
+                status.code().unwrap_or(-1)
+            ));
+            return InstallOutcome::err(COMPONENT, messages);
         }
         Err(e) => {
-            messages.push(format!("Could not launch the installer: {e}"));
+            messages.push(format!("Could not start the quiet macOS installer: {e}"));
             return InstallOutcome::err(COMPONENT, messages);
         }
     }
 
     let det = detection::main_app::detect().await;
     InstallOutcome::ok(COMPONENT, messages).with_post_state(det)
+}
+
+#[cfg(target_os = "macos")]
+fn shell_quote(path: &std::path::Path) -> String {
+    format!("'{}'", path.to_string_lossy().replace('\'', "'\\''"))
+}
+
+#[cfg(target_os = "macos")]
+fn apple_script_quote(s: &str) -> String {
+    let escaped = s.replace('\\', "\\\\").replace('"', "\\\"");
+    format!("\"{escaped}\"")
 }
 
 #[cfg(target_os = "windows")]

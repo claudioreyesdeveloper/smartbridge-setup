@@ -82,6 +82,7 @@
         )
       : text(locale, "generic_loading")
   );
+  const currentPhaseText = $derived(phaseText());
   const currentStepFraction = $derived(
     currentDownload && currentDownload.bytes_total > 0
       ? Math.min(0.95, currentDownload.bytes_downloaded / currentDownload.bytes_total)
@@ -168,6 +169,34 @@
       return `${Math.round(bytes / 1024)} KB`;
     }
     return `${bytes} bytes`;
+  }
+
+  function phaseText() {
+    if (!currentStep) return text(locale, "generic_loading");
+
+    if (!currentDownload) {
+      return locale === "de" ? "Jetzt vorbereiten..." : "Now getting ready...";
+    }
+
+    switch (currentDownload.phase) {
+      case "starting":
+        return locale === "de" ? "Download wird vorbereitet..." : "Now preparing the download...";
+      case "downloading":
+        return locale === "de" ? "Jetzt herunterladen..." : "Now downloading...";
+      case "verifying_local":
+        return locale === "de" ? "Lokale Datei wird geprüft..." : "Now checking the local file...";
+      case "verified":
+      case "verified_local":
+      case "cache_hit":
+        if (isMac && currentStep.component_id === "main-app") {
+          return locale === "de"
+            ? "Jetzt installieren. macOS fragt eventuell nach Ihrem Passwort."
+            : "Now installing. macOS may ask for your password.";
+        }
+        return locale === "de" ? "Jetzt installieren..." : "Now installing...";
+      default:
+        return locale === "de" ? "Jetzt arbeiten..." : "Now working...";
+    }
   }
 
   async function closeWindow() {
@@ -362,6 +391,7 @@
           current: currentStep.step_index + 1,
           total: currentStep.step_count,
         })}
+        <div class="phase-text">{currentPhaseText}</div>
         <div class="current-step">{currentStepText}</div>
         {#if currentDownload && currentDownload.bytes_total > 0}
           <div class="download-detail">
@@ -369,7 +399,7 @@
           </div>
         {:else if isMac && currentStep.component_id === "main-app"}
           <div class="download-detail">
-            Downloading the installer. Apple Installer may open in a separate window.
+            macOS may show a small password prompt. That is normal.
           </div>
         {/if}
       {:else}
@@ -443,6 +473,12 @@
   .current-step {
     margin-top: 8px;
     font-weight: 600;
+  }
+
+  .phase-text {
+    margin-top: 10px;
+    color: var(--primary);
+    font-weight: 700;
   }
 
   .download-detail {
