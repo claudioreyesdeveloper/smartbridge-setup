@@ -43,33 +43,29 @@ pub async fn install(app: &AppHandle, manifest: &Manifest) -> InstallOutcome {
             .collect();
     }
 
-    let ollama_path = match paths::resolve_ollama() {
-        Some(p) => p,
-        None => {
-            return InstallOutcome::err(
-                COMPONENT,
-                vec![
-                    "Ollama is not installed on this machine.".into(),
-                    "Install it from https://ollama.com or via `brew install ollama`, then click Install again.".into(),
-                ],
-            );
-        }
+    let mut setup_messages = Vec::new();
+    let ollama_path = match ensure_ollama_runtime(&mut setup_messages).await {
+        Ok(p) => p,
+        Err(messages) => return InstallOutcome::err(COMPONENT, messages),
     };
 
     if !ollama_service_up().await {
-        return InstallOutcome::err(
-            COMPONENT,
-            vec![
+        setup_messages.push("Starting the local Ollama service.".into());
+        let _ = start_ollama_service(&ollama_path).await;
+        if !wait_for_ollama_service(std::time::Duration::from_secs(30)).await {
+            setup_messages.extend(vec![
                 format!("Found Ollama at {} but the local service is not responding.", ollama_path.display()),
-                "Run `ollama serve` in a terminal, then click Install again.".into(),
-            ],
-        );
+                "Please restart the computer, then run SmartBridge Setup again.".into(),
+            ]);
+            return InstallOutcome::err(COMPONENT, setup_messages);
+        }
     }
 
-    let mut messages: Vec<String> = vec![
+    let mut messages: Vec<String> = setup_messages;
+    messages.extend(vec![
         format!("Using Ollama at {}", ollama_path.display()),
         format!("Installing {} Optimized lyrics model(s)…", ollama_tags.len()),
-    ];
+    ]);
 
     for tag in ollama_tags {
         messages.push(format!("Pulling model `{tag}` via Ollama…"));
@@ -92,6 +88,71 @@ pub async fn install(app: &AppHandle, manifest: &Manifest) -> InstallOutcome {
     }
 }
 
+async fn ensure_ollama_runtime(messages: &mut Vec<String>) -> Result<PathBuf, Vec<String>> {
+    if let Some(p) = paths::resolve_ollama() {
+        return Ok(p);
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        messages.push("Ollama is missing. Installing Ollama for AI lyrics.".into());
+        let output = match tokio::process::Command::new("winget")
+            .args([
+                "install",
+                "-e",
+                "--id",
+                "Ollama.Ollama",
+                "--silent",
+                "--accept-package-agreements",
+                "--accept-source-agreements",
+                "--disable-interactivity",
+                "--scope",
+                "user",
+            ])
+            .output()
+            .await
+        {
+            Ok(output) => output,
+            Err(e) => {
+                let mut err = messages.clone();
+                err.push(format!("Could not start winget to install Ollama: {e}"));
+                err.push("Please install Ollama from https://ollama.com, then run SmartBridge Setup again.".into());
+                return Err(err);
+            }
+        };
+
+        if !output.status.success() {
+            let mut err = messages.clone();
+            err.push(format!("winget could not install Ollama. Exit code: {:?}", output.status.code()));
+            err.push(format!("winget output: {}", String::from_utf8_lossy(&output.stdout).trim()));
+            err.push(format!("winget error: {}", String::from_utf8_lossy(&output.stderr).trim()));
+            err.push("Please install Ollama from https://ollama.com, then run SmartBridge Setup again.".into());
+            return Err(err);
+        }
+
+        messages.push("Ollama installed successfully.".into());
+        for _ in 0..20 {
+            if let Some(p) = paths::resolve_ollama() {
+                return Ok(p);
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        }
+
+        let mut err = messages.clone();
+        err.push("Ollama installed, but Setup could not find ollama.exe yet.".into());
+        err.push("Please restart the computer, then run SmartBridge Setup again.".into());
+        Err(err)
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let mut err = messages.clone();
+        err.push("Ollama is not installed on this machine.".into());
+        err.push("Install it from https://ollama.com or via `brew install ollama`, then run SmartBridge Setup again.".into());
+        Err(err)
+    }
+}
+
 async fn ollama_service_up() -> bool {
     let client = match reqwest::Client::builder()
         .timeout(std::time::Duration::from_millis(1500))
@@ -106,6 +167,35 @@ async fn ollama_service_up() -> bool {
         .await
         .map(|r| r.status().is_success())
         .unwrap_or(false)
+}
+
+async fn wait_for_ollama_service(timeout: std::time::Duration) -> bool {
+    let deadline = std::time::Instant::now() + timeout;
+    while std::time::Instant::now() < deadline {
+        if ollama_service_up().await {
+            return true;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(750)).await;
+    }
+    false
+}
+
+async fn start_ollama_service(ollama_path: &PathBuf) -> Result<(), String> {
+    let mut cmd = tokio::process::Command::new(ollama_path);
+    cmd.arg("serve")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+
+    cmd.spawn()
+        .map(|_| ())
+        .map_err(|e| format!("could not start ollama serve: {e}"))
 }
 
 async fn run_ollama_pull(
