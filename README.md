@@ -1,16 +1,17 @@
 # SmartBridge Setup
 
-[Download SmartBridge Setup](https://github.com/claudioreyesdeveloper/smartbridge-setup/releases/latest)
+[Download SmartBridge Setup 1.6.0](https://github.com/claudioreyesdeveloper/smartbridge-setup/releases/latest)
 
-Choose the download for your computer: Apple Silicon macOS 14 or newer (`.dmg`) or Windows x64 (`.exe`). Open Setup and start installation. Beta requires your email and serial; Demo provides the existing 30-day trial.
+Choose the Apple Silicon installer for macOS 14 or newer (`.dmg`) or the Windows x64 installer (`.exe`). Demo starts a 30-day trial. Beta requires your email and serial.
 
-Setup installs SmartBridge, its library, the current Cubase template, and connections for supported music applications it detects.
+## Install SmartBridge
 
-## Local AI
+Open Setup, review the available components, and click **Install Selected**. Setup installs SmartBridge, its library, and the Local Melody Engine. Depending on your platform and installed software, you can also select integrations such as VST3, Audio Unit on macOS, the Cubase template, and Synthesizer V.
 
-- **AI Melodies:** Setup installs a private Python runtime, Composer’s Assistant and SkyTNT automatically. You do not need to install Python or run terminal commands.
-- **AI Lyrics (Ollama): optional and off by default.** Select AI Lyrics in Setup if you want it. Only then does Setup install Ollama if missing and download the lyrics models. Leave it unselected to skip those downloads.
+Setup installs a private runtime for the Local Melody Engine. You can generate melodies locally after installation without installing Python separately.
 
-An internet connection is required for the initial downloads. Setup checks download integrity and loads both melody models before activating the new runtime.
+**AI Lyrics (Ollama)** is optional and off by default. Select it to install Ollama if needed and download the lyrics models.
 
-Application packages and supporting files are published in [SmartBridge releases](https://github.com/claudioreyesdeveloper/smartbridge-releases/releases/latest).
+An internet connection is required for the initial downloads. Setup verifies package integrity and can resume interrupted downloads when the server supports it. If a component fails, you can retry the unfinished steps in the same Setup session.
+
+[SmartBridge application packages and supporting files](https://github.com/claudioreyesdeveloper/smartbridge-releases/releases/latest)
